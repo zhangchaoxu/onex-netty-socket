@@ -15,7 +15,9 @@ public class NettyChannelMap {
     private static Map<String, SocketChannel> map = new ConcurrentHashMap<>();
 
     public static void add(String clientId, SocketChannel socketChannel) {
-        map.put(clientId, socketChannel);
+        if (null == get(clientId)) {
+            map.put(clientId, socketChannel);
+        }
     }
 
     public static Channel get(String clientId) {

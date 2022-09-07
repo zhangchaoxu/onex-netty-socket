@@ -1,23 +1,34 @@
 package com.nb6868.onex.netty;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
  * 自定义一个Handler，需要继承Netty规定好的某个HandlerAdapter
  * 自定义一个Handler，才能称为一个Handler
- *
+ * <p>
  * 若有需要，可用NettyChannelMap管理channel
  */
 @Slf4j
 @Component
 @ChannelHandler.Sharable
 public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
+
+    /**
+     * 定义一个channel组管理所有channel
+     * GlobalEventExecutor.INSTANCE 是一个全局事件执行器 是一个单例
+     */
+    private static ChannelGroup channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
@@ -31,6 +42,9 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+        // 通道加入map
+        String clientId = ctx.channel().remoteAddress().toString();
+        NettyChannelMap.add(clientId, (SocketChannel) ctx.channel());
         // 解决16进制编解码问题
         String message = "";
         byte[] bytebuf = ((String) msg).getBytes();
@@ -45,7 +59,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
         ctx.channel().writeAndFlush("123456789");
         ctx.channel().eventLoop().execute(() -> {
             try {
-                Thread.sleep(10*1000);
+                Thread.sleep(10 * 1000);
                 log.info(">>>>>>>>>休眠十秒");
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -56,6 +70,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         log.info("handlerAdded --> 通道注册成功 {}", ctx.channel().remoteAddress());
+        channelGroup.add(ctx.channel());
     }
 
     @Override
@@ -71,6 +86,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("channelInactive --> 通道关闭 --> {}", ctx.channel().remoteAddress());
+        NettyChannelMap.remove((SocketChannel) ctx.channel());
     }
 
     /**

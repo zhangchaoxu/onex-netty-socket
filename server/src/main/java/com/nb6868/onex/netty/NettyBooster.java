@@ -3,6 +3,7 @@ package com.nb6868.onex.netty;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -64,7 +65,6 @@ public class NettyBooster {
                         // 给我们的workerGroup的EventLoop对应的管道设置处理器
                         .childHandler(new ChannelInitializer<SocketChannel>() {
                             /**
-                             * 创建一个通道测试对象（匿名对象）
                              * 给pipeline设置处理器
                              */
                             @Override
@@ -76,15 +76,21 @@ public class NettyBooster {
                                 // 打印分隔符,分包处理
                                 // ByteBuf delimiter = Unpooled.copiedBuffer(new byte[]{16,3});
                                 // socketChannel.pipeline().addLast("frameDecoder", new DelimiterBasedFrameDecoder(1024,false, delimiter));
-                                // ChannelOutboundHandler，依照逆序执行
+                                // 属于ChannelOutboundHandler，依照逆序执行
                                 socketChannel.pipeline().addLast("encoder", new StringEncoder());
                                 // 属于ChannelInboundHandler，依照顺序执行
                                 socketChannel.pipeline().addLast("decoder", new StringDecoder());
                                 socketChannel.pipeline().addLast(nettyServerHandler);
                             }
                         });
-        serverBootstrap.bind(nettyPort).sync();
-        log.info("NettyBooster.start --> Netty 启动成功");
+        ChannelFuture cf = serverBootstrap.bind(nettyPort).sync();
+        if (cf.isSuccess()) {
+            log.info("NettyBooster.start --> Netty 启动成功");
+        } else {
+            log.error("NettyBooster.start --> Netty 启动失败");
+        }
+        //对关闭通道进行监听
+        cf.channel().closeFuture().sync();
     }
 
     /**
