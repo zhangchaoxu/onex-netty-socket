@@ -20,6 +20,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import cn.hutool.core.util.ObjectUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -29,8 +30,13 @@ import javax.annotation.PreDestroy;
 @Component
 public class NettyBooster {
 
+    @Value("${netty.server.port}")
+    private int nettyPort;
+
     private final NettyServerHandler nettyServerHandler;
-    //创建BossGroup，这里指定线程数1就够了，bossGroup 就相当于领导，workerGroup 就相当于员工，领导有一个差不多了
+
+    // bossGroup 只是处理连接请求，真正的和客户端业务处理，会交给 workerGroup 完成
+    // 创建BossGroup，这里指定线程数1就够了，bossGroup 就相当于领导，workerGroup 就相当于员工，领导有一个差不多了
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     //创建WorkerGroup
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -77,7 +83,7 @@ public class NettyBooster {
                                 socketChannel.pipeline().addLast(nettyServerHandler);
                             }
                         });
-        serverBootstrap.bind(44001).sync();
+        serverBootstrap.bind(nettyPort).sync();
         log.info("NettyBooster.start --> Netty 启动成功");
     }
 
