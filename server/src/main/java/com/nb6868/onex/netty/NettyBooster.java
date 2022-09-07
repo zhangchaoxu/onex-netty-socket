@@ -11,6 +11,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.bytes.ByteArrayDecoder;
+import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
@@ -77,9 +79,9 @@ public class NettyBooster {
                                 // ByteBuf delimiter = Unpooled.copiedBuffer(new byte[]{16,3});
                                 // socketChannel.pipeline().addLast("frameDecoder", new DelimiterBasedFrameDecoder(1024,false, delimiter));
                                 // 属于ChannelOutboundHandler，依照逆序执行
-                                socketChannel.pipeline().addLast("encoder", new StringEncoder());
+                                socketChannel.pipeline().addLast("encoder", new ByteArrayEncoder());
                                 // 属于ChannelInboundHandler，依照顺序执行
-                                socketChannel.pipeline().addLast("decoder", new StringDecoder());
+                                socketChannel.pipeline().addLast("decoder", new ByteArrayDecoder());
                                 socketChannel.pipeline().addLast(nettyServerHandler);
                             }
                         });

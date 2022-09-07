@@ -1,5 +1,7 @@
 package com.nb6868.onex.netty;
 
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.HexUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,6 +14,8 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.Charset;
 
 /**
  * 自定义一个Handler，需要继承Netty规定好的某个HandlerAdapter
@@ -45,25 +49,16 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Object> {
         // 通道加入map
         String clientId = ctx.channel().remoteAddress().toString();
         NettyChannelMap.add(clientId, (SocketChannel) ctx.channel());
-        // 解决16进制编解码问题
-        String message = "";
-        byte[] bytebuf = ((String) msg).getBytes();
-        // 此解码为解决 16进制在超过79的情况乱码问题
-        for (int i = 0, len = bytebuf.length; i < len; i++) {
-            String hex = Integer.toHexString(bytebuf[i] & 0xff).toUpperCase();
-            message += hex.length() == 1 ? "0" + hex : hex;
-        }
-        log.info("channelRead0 --> 客户端【{}】发送来的消息 【{}】", ctx.channel().remoteAddress(), message);
+        // 收到的是byte数组
+        String message = HexUtil.encodeHexStr((byte[]) msg);
+        log.info("channelRead0 --> 客户端【{}】发送来的消息Str 【{}】", ctx.channel().remoteAddress(), message);
         // 回复消息
-        //byte[] returnByte = new byte[]{1, 2, 3,4, 5};
-        ctx.channel().writeAndFlush("123456789");
+        byte[] returnString = HexUtil.decodeHex("EF10090908");
+        log.info("channelRead0 --> 返回消息Hex");
+        ctx.channel().writeAndFlush(returnString);
         ctx.channel().eventLoop().execute(() -> {
-            try {
-                Thread.sleep(10 * 1000);
-                log.info(">>>>>>>>>休眠十秒");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            ThreadUtil.sleep(200);
+            log.info("发送完成");
         });
     }
 
