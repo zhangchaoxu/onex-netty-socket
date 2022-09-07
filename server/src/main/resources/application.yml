@@ -1,0 +1,10 @@
+# Tomcat
+server:
+  port: 44000
+  servlet:
+    context-path: /server
+
+# netty config
+netty:
+  server:
+    port: 44001
